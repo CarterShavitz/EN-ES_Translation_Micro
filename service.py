@@ -1,9 +1,11 @@
-from models import TranslationModel
+from models import TranslationModel, UserModel
 
 
 class TranslationService:
-   def __init__(self):
-       self.model = TranslationModel()
+   """Class to create a translation model and enact the correct functions
+    """
+   def __init__(self, conn):
+       self.model = TranslationModel(conn)
 
    def create(self, params):
        return self.model.create(params)
@@ -21,3 +23,19 @@ class TranslationService:
    def get_by_id(self, item_id):
        response = self.model.get_by_id(item_id)
        return response
+
+class UserService:
+   """Class to create a user model and enact the correct functions
+    """
+   def __init__(self, conn):
+       self.model = UserModel(conn)
+
+   def create_user(self, params):
+       return self.model.create_user(params)
+   
+   def register_user(self, params):
+        return self.model.register_user(params)
+
+   def get_user_by_api_key(self, api_key):
+        return self.model.get_user_by_api_key(api_key)
+   

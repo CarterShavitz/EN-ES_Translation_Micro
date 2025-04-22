@@ -1,10 +1,13 @@
 import sqlite3
+import uuid
+import bcrypt
 
 
 class Schema:
    def __init__(self):
        self.conn = sqlite3.connect('translations.db')
        self.create_translation_table()
+       self.create_user_table()
 
    def __del__(self):
        # body of destructor
@@ -12,36 +15,88 @@ class Schema:
        self.conn.close()
 
    def create_translation_table(self):
+        """Function to create the translation table of en_es
+        """
+        query = """
+            CREATE TABLE IF NOT EXISTS "en_es" (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                English TEXT,
+                Spanish TEXT
+            );
+            """
 
-       query = """
-       CREATE TABLE IF NOT EXISTS "en_es" (
+        self.conn.execute(query)
+       
+   def create_user_table(self):
+        """Function to create the user table
+        """
+        query = """
+       CREATE TABLE IF NOT EXISTS "user" (
          id INTEGER PRIMARY KEY AUTOINCREMENT,
-         English TEXT,
-         Spanish TEXT
+         username TEXT UNIQUE NOT NULL,
+         password_hash TEXT NOT NULL,
+         api_key TEXT UNIQUE
        );
        """
 
-       self.conn.execute(query)
+        self.conn.execute(query)
 
-class TranslationModel:
-   TABLENAME = "en_es"
-
-   def __init__(self):
-       self.conn = sqlite3.connect('translations.db')
+class UserModel:
+   """Class to establish the user model to run functions on the database
+    """
+   TABLENAME = "user"
+   
+   def __init__(self, conn):
+       self.conn = conn
        self.conn.row_factory = sqlite3.Row
 
-   def __del__(self):
-       # body of destructor
-       self.conn.commit()
-       self.conn.close()
+   def generate_api_key(self):
+        return str(uuid.uuid4())
+
+   def register_user(self, params):
+       """Function to register the user and input the proper information and create an API Key
+        """
+       username = params.get("username")
+       password = params.get("password")
+       if username and password:
+            password_bytes = password.encode('utf-8')
+            salt = bcrypt.gensalt()
+            hashed_password = bcrypt.hashpw(password_bytes, salt)
+            api_key = self.generate_api_key()
+            try:
+                query = f'insert into {self.TABLENAME} (username, password_hash, api_key) ' \
+                        f'values ("{username}","{hashed_password}","{api_key}")'
+                self.conn.execute(query)
+                self.conn.commit()
+                return self.get_user_by_username(username)
+            except sqlite3.IntegrityError:
+                return None
+            
+   def get_user_by_username(self, username):
+       query = f'SELECT * FROM {self.TABLENAME} WHERE username = "{username}"'
+       result = self.conn.execute(query).fetchone()
+       return result
+   
+   def get_user_by_api_key(self, api_key):
+        query = f'SELECT * FROM {self.TABLENAME} WHERE api_key = "{api_key}"'
+        result = self.conn.execute(query).fetchone()
+        return result
+
+class TranslationModel:
+   """Class to establish the translation model to run functions on the database
+    """
+   TABLENAME = "en_es"
+
+   def __init__(self, conn):
+       self.conn = conn
+       self.conn.row_factory = sqlite3.Row
 
    def get_by_id(self, id):
        where_clause = f"id = {id}"
        return self.list_items(where_clause)
 
    def create(self, params):
-       print (params)
-       query = f'insert into {self.TABLENAME} (English, Spanish)' \
+       query = f'insert into {self.TABLENAME} (English, Spanish) ' \
                f'values ("{params.get("English")}","{params.get("Spanish")}")'
        result = self.conn.execute(query)
        return self.get_by_id(result.lastrowid)
