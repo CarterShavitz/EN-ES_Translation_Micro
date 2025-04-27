@@ -2,13 +2,13 @@ from flask import Flask, request, jsonify, g
 from service import TranslationService, UserService
 from models import Schema
 import sqlite3
-
+import os
 import json
 
 app = Flask(__name__)
 
 API_KEY_HEADER = 'X-API-Key'
-DATABASE = 'translations.db'
+DATABASE = os.environ.get('DATABASE_PATH', 'translations.db')
 
 def get_db():
     """Function to get the database for later use

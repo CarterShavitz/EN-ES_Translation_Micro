@@ -1,11 +1,15 @@
 import sqlite3
 import uuid
 import bcrypt
+import os
 
 
 class Schema:
    def __init__(self):
-       self.conn = sqlite3.connect('translations.db')
+       db_path = os.environ.get('DATABASE_PATH', 'translations.db')
+       # Ensure the directory exists
+       os.makedirs(os.path.dirname(db_path), exist_ok=True)
+       self.conn = sqlite3.connect(db_path)
        self.create_translation_table()
        self.create_user_table()
 
@@ -26,7 +30,7 @@ class Schema:
             """
 
         self.conn.execute(query)
-       
+
    def create_user_table(self):
         """Function to create the user table
         """
@@ -45,7 +49,7 @@ class UserModel:
    """Class to establish the user model to run functions on the database
     """
    TABLENAME = "user"
-   
+
    def __init__(self, conn):
        self.conn = conn
        self.conn.row_factory = sqlite3.Row
@@ -71,12 +75,12 @@ class UserModel:
                 return self.get_user_by_username(username)
             except sqlite3.IntegrityError:
                 return None
-            
+
    def get_user_by_username(self, username):
        query = f'SELECT * FROM {self.TABLENAME} WHERE username = "{username}"'
        result = self.conn.execute(query).fetchone()
        return result
-   
+
    def get_user_by_api_key(self, api_key):
         query = f'SELECT * FROM {self.TABLENAME} WHERE api_key = "{api_key}"'
         result = self.conn.execute(query).fetchone()
@@ -99,6 +103,7 @@ class TranslationModel:
        query = f'insert into {self.TABLENAME} (English, Spanish) ' \
                f'values ("{params.get("English")}","{params.get("Spanish")}")'
        result = self.conn.execute(query)
+       self.conn.commit()  # Explicitly commit the transaction
        return self.get_by_id(result.lastrowid)
 
    def delete(self, item_id):
@@ -106,6 +111,7 @@ class TranslationModel:
                f"WHERE id = {item_id}"
        print (query)
        self.conn.execute(query)
+       self.conn.commit()  # Explicitly commit the transaction
        return self.list_items()
 
    def update(self, item_id, update_dict):
@@ -121,6 +127,7 @@ class TranslationModel:
                f"WHERE id = {item_id}"
 
        self.conn.execute(query)
+       self.conn.commit()  # Explicitly commit the transaction
        return self.get_by_id(item_id)
 
    def list_items(self, where_clause="TRUE"):
