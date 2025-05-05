@@ -1,11 +1,10 @@
-from models import TranslationModel, UserModel
+from models import GlossaryModel, UserModel
 
-
-class TranslationService:
-   """Class to create a translation model and enact the correct functions
+class GlossaryService:
+   """Class to create a glossary model and enact the correct functions
     """
    def __init__(self, conn):
-       self.model = TranslationModel(conn)
+       self.model = GlossaryModel(conn)
 
    def create(self, params):
        return self.model.create(params)

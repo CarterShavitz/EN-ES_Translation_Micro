@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, g
-from service import TranslationService, UserService
+from service import GlossaryService, UserService
 from models import Schema
 import sqlite3
 import os
@@ -29,10 +29,10 @@ def close_connection(exception):
         db.close()
 
 # Function to get the database for later use
-def get_translation_service():
+def get_glossary_service():
     """Function to get the translation service
     """
-    return TranslationService(get_db())
+    return GlossaryService(get_db())
 
 def get_user_service():
     """Function to get the user service
@@ -91,34 +91,34 @@ def register():
 @app.route("/translations", methods=["GET"])
 @requires_auth
 def list_translations():
-   translation_service = get_translation_service()
-   return jsonify(translation_service.list())
+   glossary_service = get_glossary_service()
+   return jsonify(glossary_service.list())
 
 
 @app.route("/translations", methods=["POST"])
 @requires_auth
 def create_translation():
-   translation_service = get_translation_service()
-   return jsonify(translation_service.create(request.get_json()))
+   glossary_service = get_glossary_service()
+   return jsonify(glossary_service.create(request.get_json()))
 
 
 @app.route("/translations/<item_id>", methods=["PUT"])
 @requires_auth
 def update_item(item_id):
-   translation_service = get_translation_service()
-   return jsonify(translation_service.update(item_id, request.get_json()))
+   glossary_service = get_glossary_service()
+   return jsonify(glossary_service.update(item_id, request.get_json()))
 
 @app.route("/translations/<item_id>", methods=["GET"])
 @requires_auth
 def get_item(item_id):
-   translation_service = get_translation_service()
-   return jsonify(translation_service.get_by_id(item_id))
+   glossary_service = get_glossary_service()
+   return jsonify(glossary_service.get_by_id(item_id))
 
 @app.route("/translations/<item_id>", methods=["DELETE"])
 @requires_auth
 def delete_item(item_id):
-   translation_service = get_translation_service()
-   return jsonify(translation_service.delete(item_id))
+   glossary_service = get_glossary_service()
+   return jsonify(glossary_service.delete(item_id))
 
 
 if __name__ == "__main__":

@@ -6,11 +6,11 @@ import os
 
 class Schema:
    def __init__(self):
-       db_path = os.environ.get('DATABASE_PATH', 'translations.db')
+       db_path = os.environ.get('DATABASE_PATH', 'glossary.db')
        # Ensure the directory exists
        os.makedirs(os.path.dirname(db_path), exist_ok=True)
        self.conn = sqlite3.connect(db_path)
-       self.create_translation_table()
+       self.create_glossary_table()
        self.create_user_table()
 
    def __del__(self):
@@ -18,8 +18,8 @@ class Schema:
        self.conn.commit()
        self.conn.close()
 
-   def create_translation_table(self):
-        """Function to create the translation table of en_es
+   def create_glossary_table(self):
+        """Function to create the glossary table of en_es
         """
         query = """
             CREATE TABLE IF NOT EXISTS "en_es" (
@@ -86,8 +86,8 @@ class UserModel:
         result = self.conn.execute(query).fetchone()
         return result
 
-class TranslationModel:
-   """Class to establish the translation model to run functions on the database
+class GlossaryModel:
+   """Class to establish the glossary model to run functions on the database
     """
    TABLENAME = "en_es"
 
