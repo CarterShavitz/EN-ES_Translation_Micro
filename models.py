@@ -6,7 +6,7 @@ import os
 
 class Schema:
    def __init__(self):
-       db_path = os.environ.get('DATABASE_PATH', 'translations.db')
+       db_path = os.environ.get('DATABASE_PATH', 'data/translations.db')
        # Ensure the directory exists
        os.makedirs(os.path.dirname(db_path), exist_ok=True)
        self.conn = sqlite3.connect(db_path)
