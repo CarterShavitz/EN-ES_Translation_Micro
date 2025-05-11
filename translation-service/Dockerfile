@@ -11,19 +11,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Create a directory for the database
-RUN mkdir -p /app/data
-
-# Create a volume for the database
-VOLUME /app/data
-
-# Set environment variable for database path
-ENV DATABASE_PATH=/app/data/translations.db
-
-EXPOSE 5000
+EXPOSE 5002
 
 # Health check to ensure the application is running
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5000/api || exit 1
+    CMD curl -f http://localhost:5002/api || exit 1
 
 CMD ["python", "app.py"]

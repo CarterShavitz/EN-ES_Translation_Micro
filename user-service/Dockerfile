@@ -18,12 +18,12 @@ RUN mkdir -p /app/data
 VOLUME /app/data
 
 # Set environment variable for database path
-ENV DATABASE_PATH=/app/data/translations.db
+ENV DATABASE_PATH=/app/data/users.db
 
-EXPOSE 5000
+EXPOSE 5001
 
 # Health check to ensure the application is running
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5000/api || exit 1
+    CMD curl -f http://localhost:5001/api || exit 1
 
 CMD ["python", "app.py"]

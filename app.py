@@ -1,11 +1,22 @@
-from flask import Flask, request, jsonify, g
+from flask import Flask, request, jsonify, g, send_from_directory
+from flask_cors import CORS
 from service import GlossaryService, UserService
 from models import Schema
 import sqlite3
 import os
 import json
+import time
 
-app = Flask(__name__)
+# Import the translation model
+try:
+    from translation_model import get_translation_model
+    TRANSLATION_MODEL_AVAILABLE = True
+except ImportError:
+    print("Warning: Translation model dependencies not installed. Machine translation will not be available.")
+    TRANSLATION_MODEL_AVAILABLE = False
+
+app = Flask(__name__, static_folder='static')
+CORS(app)  # Enable CORS for all routes
 
 API_KEY_HEADER = 'X-API-Key'
 DATABASE = os.environ.get('DATABASE_PATH', 'translations.db')
@@ -71,8 +82,19 @@ def add_headers(response):
    return response
 
 @app.route("/")
+def index():
+    """Serve the main HTML page"""
+    return send_from_directory(app.static_folder, 'index.html')
+
+@app.route("/<path:path>")
+def static_files(path):
+    """Serve static files"""
+    return send_from_directory(app.static_folder, path)
+
+@app.route("/api")
 def hello():
-   return "Hello World!"
+    """Simple API health check endpoint"""
+    return "Translation API is running!"
 
 @app.route("/register", methods=["POST"])
 def register():
@@ -121,6 +143,39 @@ def delete_item(item_id):
    return jsonify(glossary_service.delete(item_id))
 
 
+@app.route("/translate", methods=["POST"])
+@requires_auth
+def translate_text():
+    """Translate English text to Spanish using the ML model"""
+    if not TRANSLATION_MODEL_AVAILABLE:
+        return jsonify({"error": "Translation model is not available"}), 503
+
+    data = request.get_json()
+    if not data or not data.get("text"):
+        return jsonify({"error": "Missing text to translate"}), 400
+
+    text = data.get("text")
+
+    try:
+        # Get the translation model and translate the text
+        model = get_translation_model()
+        translation = model.translate(text)
+
+        return jsonify({"translation": translation})
+    except Exception as e:
+        return jsonify({"error": f"Translation failed: {str(e)}"}), 500
+
+
 if __name__ == "__main__":
    Schema()
+   # Initialize translation model if available
+   if TRANSLATION_MODEL_AVAILABLE:
+       try:
+           # Load the model in a separate thread to avoid blocking the app startup
+           import threading
+           threading.Thread(target=get_translation_model, daemon=True).start()
+           print("Translation model loading in background...")
+       except Exception as e:
+           print(f"Error loading translation model: {e}")
+
    app.run(debug=True, host='0.0.0.0', port=5000)

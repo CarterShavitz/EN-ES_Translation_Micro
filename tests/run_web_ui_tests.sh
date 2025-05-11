@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Install test dependencies
+echo "Installing test dependencies..."
+pip install -r requirements-test.txt
+
+# Start the Docker container in the background
+echo "Starting Docker container..."
+docker-compose up -d
+
+# Wait for the container to be ready
+echo "Waiting for container to be ready..."
+echo "This may take up to 30 seconds..."
+sleep 10
+
+# Check if the container is healthy
+CONTAINER_ID=$(docker-compose ps -q translation-api)
+HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' $CONTAINER_ID 2>/dev/null || echo "starting")
+echo "Container health status: $HEALTH_STATUS"
+
+# If not healthy yet, wait a bit more
+if [ "$HEALTH_STATUS" != "healthy" ]; then
+    echo "Container is not healthy yet, waiting more time..."
+    sleep 20
+    HEALTH_STATUS=$(docker inspect --format='{{.State.Health.Status}}' $CONTAINER_ID 2>/dev/null || echo "starting")
+    echo "Container health status: $HEALTH_STATUS"
+fi
+
+# Run the tests
+echo "Running Web UI tests..."
+python tests/test_web_ui.py
+
+# Capture the exit code
+EXIT_CODE=$?
+
+# Stop the container
+echo "Stopping Docker container..."
+docker-compose down
+
+# Return the exit code from the tests
+exit $EXIT_CODE

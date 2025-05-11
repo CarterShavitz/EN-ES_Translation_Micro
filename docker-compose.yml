@@ -1,18 +1,91 @@
+version: '3.8'
+
 services:
-  translation-api:
+  # User Management Service
+  user-service:
     build:
-      context: .
+      context: ./user-service
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "5001:5001"
     volumes:
-      - ./data:/app/data
+      - user-data:/app/data
     environment:
-      - DATABASE_PATH=/app/data/translations.db
+      - DATABASE_PATH=/app/data/users.db
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:5001/api"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 5s
+    networks:
+      - translation-network
+
+  # Vocabulary Storage Service
+  vocab-service:
+    build:
+      context: ./vocab-service
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - vocab-data:/app/data
+    environment:
+      - DATABASE_PATH=/app/data/vocab.db
+      - USER_SERVICE_URL=http://user-service:5001
+    restart: unless-stopped
+    depends_on:
+      - user-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - translation-network
+
+  # Translation Service
+  translation-service:
+    build:
+      context: ./translation-service
+      dockerfile: Dockerfile
+    ports:
+      - "5002:5002"
+    environment:
+      - USER_SERVICE_URL=http://user-service:5001
+    restart: unless-stopped
+    depends_on:
+      - user-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/api"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - translation-network
+
+  # Web UI
+  web-ui:
+    build:
+      context: ./web-ui
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      - user-service
+      - vocab-service
+      - translation-service
+    networks:
+      - translation-network
+
+volumes:
+  user-data:
+  vocab-data:
+
+networks:
+  translation-network:
+    driver: bridge

@@ -1,0 +1,228 @@
+// Global variables
+let apiKey = localStorage.getItem('apiKey') || '';
+const API_BASE_URL = 'http://localhost:5000';
+
+// DOM elements
+const registerForm = document.getElementById('registerForm');
+const apiKeyDisplay = document.getElementById('apiKeyDisplay');
+const apiKeyElement = document.getElementById('apiKey');
+const addVocabForm = document.getElementById('addVocabForm');
+const vocabTableBody = document.getElementById('vocabTableBody');
+const translateForm = document.getElementById('translateForm');
+const englishText = document.getElementById('englishText');
+const spanishText = document.getElementById('spanishText');
+
+// Check if API key exists in local storage and show it
+if (apiKey) {
+    apiKeyElement.textContent = apiKey;
+    apiKeyDisplay.classList.remove('d-none');
+    // Load vocabulary on page load if API key exists
+    loadVocabulary();
+}
+
+// Event listeners
+registerForm.addEventListener('submit', handleRegister);
+addVocabForm.addEventListener('submit', handleAddVocab);
+translateForm.addEventListener('submit', handleTranslate);
+
+// Register user and get API key
+async function handleRegister(event) {
+    event.preventDefault();
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            apiKey = data.api_key;
+            localStorage.setItem('apiKey', apiKey);
+            apiKeyElement.textContent = apiKey;
+            apiKeyDisplay.classList.remove('d-none');
+
+            // Load vocabulary after successful registration
+            loadVocabulary();
+        } else {
+            alert(`Registration failed: ${data.error}`);
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+}
+
+// Load vocabulary from API
+async function loadVocabulary() {
+    if (!apiKey) {
+        alert('Please register to get an API key first');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/translations`, {
+            method: 'GET',
+            headers: {
+                'X-API-Key': apiKey
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            displayVocabulary(data);
+        } else {
+            const errorData = await response.json();
+            alert(`Failed to load vocabulary: ${errorData.error}`);
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+}
+
+// Display vocabulary in the table
+function displayVocabulary(vocabulary) {
+    vocabTableBody.innerHTML = '';
+
+    if (vocabulary.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="4" class="text-center">No vocabulary items found</td>';
+        vocabTableBody.appendChild(row);
+        return;
+    }
+
+    vocabulary.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.id}</td>
+            <td>${item.English}</td>
+            <td>${item.Spanish}</td>
+            <td>
+                <button class="btn btn-sm btn-link btn-delete" data-id="${item.id}">
+                    <i class="bi bi-trash"></i> Delete
+                </button>
+            </td>
+        `;
+        vocabTableBody.appendChild(row);
+
+        // Add event listener to delete button
+        const deleteButton = row.querySelector('.btn-delete');
+        deleteButton.addEventListener('click', () => deleteVocabItem(item.id));
+    });
+}
+
+// Add new vocabulary item
+async function handleAddVocab(event) {
+    event.preventDefault();
+
+    if (!apiKey) {
+        alert('Please register to get an API key first');
+        return;
+    }
+
+    const englishTerm = document.getElementById('englishTerm').value;
+    const spanishTerm = document.getElementById('spanishTerm').value;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/translations`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': apiKey
+            },
+            body: JSON.stringify({
+                English: englishTerm,
+                Spanish: spanishTerm
+            })
+        });
+
+        if (response.ok) {
+            // Clear form fields
+            document.getElementById('englishTerm').value = '';
+            document.getElementById('spanishTerm').value = '';
+
+            // Reload vocabulary
+            loadVocabulary();
+        } else {
+            const errorData = await response.json();
+            alert(`Failed to add vocabulary: ${errorData.error}`);
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+}
+
+// Delete vocabulary item
+async function deleteVocabItem(id) {
+    if (!apiKey) {
+        alert('Please register to get an API key first');
+        return;
+    }
+
+    if (!confirm('Are you sure you want to delete this vocabulary item?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/translations/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-API-Key': apiKey
+            }
+        });
+
+        if (response.ok) {
+            // Reload vocabulary
+            loadVocabulary();
+        } else {
+            const errorData = await response.json();
+            alert(`Failed to delete vocabulary: ${errorData.error}`);
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+}
+
+// Translate text
+async function handleTranslate(event) {
+    event.preventDefault();
+
+    if (!apiKey) {
+        alert('Please register to get an API key first');
+        return;
+    }
+
+    const text = englishText.value.trim();
+
+    if (!text) {
+        alert('Please enter some text to translate');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/translate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': apiKey
+            },
+            body: JSON.stringify({ text })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            spanishText.value = data.translation;
+        } else {
+            const errorData = await response.json();
+            alert(`Translation failed: ${errorData.error}`);
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+}

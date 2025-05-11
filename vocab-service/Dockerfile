@@ -18,7 +18,7 @@ RUN mkdir -p /app/data
 VOLUME /app/data
 
 # Set environment variable for database path
-ENV DATABASE_PATH=/app/data/translations.db
+ENV DATABASE_PATH=/app/data/vocab.db
 
 EXPOSE 5000
 
