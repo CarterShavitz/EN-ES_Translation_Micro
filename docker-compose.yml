@@ -55,9 +55,11 @@ services:
       - "5002:5002"
     environment:
       - USER_SERVICE_URL=http://user-service:5001
+      - VOCAB_SERVICE_URL=http://vocab-service:5000
     restart: unless-stopped
     depends_on:
       - user-service
+      - vocab-service
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5002/api"]
       interval: 30s

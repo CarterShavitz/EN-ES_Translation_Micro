@@ -24,6 +24,8 @@ const vocabTableBody = document.getElementById('vocabTableBody');
 const translateForm = document.getElementById('translateForm');
 const englishText = document.getElementById('englishText');
 const spanishText = document.getElementById('spanishText');
+const preprocessedTextContainer = document.getElementById('preprocessedTextContainer');
+const preprocessedText = document.getElementById('preprocessedText');
 
 // Check if API key exists in local storage and show it
 if (apiKey) {
@@ -246,9 +248,18 @@ async function handleTranslate(event) {
         if (response.ok) {
             const data = await response.json();
             spanishText.value = data.translation;
+
+            // Handle preprocessed text if available
+            if (data.preprocessed && data.preprocessed_text) {
+                preprocessedText.value = data.preprocessed_text;
+                preprocessedTextContainer.classList.remove('d-none');
+            } else {
+                preprocessedTextContainer.classList.add('d-none');
+            }
         } else {
             const errorData = await response.json();
             alert(`Translation failed: ${errorData.error}`);
+            preprocessedTextContainer.classList.add('d-none');
         }
     } catch (error) {
         alert(`Error: ${error.message}`);
